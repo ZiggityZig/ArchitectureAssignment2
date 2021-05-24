@@ -37,6 +37,7 @@ myCalc:
   push ebp
   mov ebp, esp
   pushad
+  mov dword [last],stack
   start:
   push msg
   call printf
@@ -129,8 +130,8 @@ addNum:
   add esp,4
   mov dword ecx,[last]
   add ecx,4
+  mov dword [ecx],eax
   mov dword [last],ecx
-  mov dword [last],eax
   mov dword ecx,[ebp+8]
   lastchar:
     add dword [num],1
@@ -184,7 +185,9 @@ pop_and_print:
   call malloc
   add esp,4
   mov dword [temp],eax
+  mov dword [num],0
   reverse:
+    add dword [num],1
     push byte [ecx]
     push eax
     call create_link
@@ -192,7 +195,14 @@ pop_and_print:
     mov dword [ecx],[ecx+1]
     cmp dword [ecx],0
     jne reverse
+  push dword [num]
+  call calloc
+  add esp,0
   
+  mov edx,
+  recreate:
+    
+
   popad                    	         		
   mov esp, ebp			
   pop ebp				
