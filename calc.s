@@ -9,6 +9,7 @@ section .bss
   max: resd 1
   last: resd 1
   num: resd 1
+  temp: resd 1
 
 section .text
   align 16
@@ -36,6 +37,7 @@ myCalc:
   push ebp
   mov ebp, esp
   pushad
+  mov dword [last],stack
   start:
   push msg
   call printf
@@ -123,35 +125,31 @@ addNum:
   push ebp
   mov ebp, esp
   pushad
-  mov dword ecx,[ebp+8]
-  mov eax,0
-  conv:
-    mov edx,0
-    shl eax,3
-    mov dl,[ecx]
-    sub dl,'0'
-    add eax,edx
-    inc ecx
-    cmp byte [ecx],10
-    jne conv
-  mov dword [num],eax
   push dword 5
   call malloc
   add esp,4
   mov dword ecx,[last]
   add ecx,4
+  mov dword [ecx],eax
   mov dword [last],ecx
-  mov dword [last],eax
-  
-  LL:
+  mov dword ecx,[ebp+8]
+  lastchar:
+    add dword [num],1
+    inc ecx
+    cmp byte [ecx],10
+    jne lastchar
+  conv:
+    mov edx,0
+    mov dl,[ecx]
+    sub dl,'0'
+    push edx
     push eax
     call create_link
-    add esp,4
-    mov dword edx,[num]
-    shr edx,8
-    mov dword [num],edx
+    add esp,8
+    dec ecx
+    sub dword [num],1
     cmp dword [num],0
-    jne LL
+    jne conv
   popad                    	         		
   mov esp, ebp			
   pop ebp				
@@ -161,17 +159,19 @@ addNum:
 create_link:
   push ebp              		
   mov ebp, esp         		
-  pushad                   			
+  pushad   
+  sub esp,4                			
 	push dword 5
   call malloc
   add esp,4
   mov dword ecx,[ebp+8]
-  mov dword edx,[num]
+  mov dword edx,[ebp+12]
   mov byte [eax],dl
   mov dword [eax+1],0
   mov dword [ecx+1],eax
-;  mov dword [bot],eax
-  popad                    	         		
+  mov [ebp-4], ebx
+  popad
+  mov eax, [ebp-4]                    	         		
   mov esp, ebp			
   pop ebp				
   ret
@@ -181,7 +181,32 @@ pop_and_print:
   mov ebp, esp         		
   pushad 
   mov dword ecx,[last]
+<<<<<<< HEAD
  
+=======
+  push dword 5
+  call malloc
+  add esp,4
+  mov dword [temp],eax
+  mov dword [num],0
+  reverse:
+    add dword [num],1
+    push byte [ecx]
+    push eax
+    call create_link
+    add esp,4
+    mov dword [ecx],[ecx+1]
+    cmp dword [ecx],0
+    jne reverse
+  push dword [num]
+  call calloc
+  add esp,0
+  
+  mov edx,
+  recreate:
+    
+
+>>>>>>> ce3b227d83274c9b1770857402e4ffe45ea5ce05
   popad                    	         		
   mov esp, ebp			
   pop ebp				
