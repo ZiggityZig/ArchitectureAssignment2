@@ -76,42 +76,42 @@ applyOperator:
   jne isAdd
   call pop_and_print
 
-isAdd:
-  cmp byte [ecx],'+'
-  jne isMult
-  call addition
+; isAdd:
+;   cmp byte [ecx],'+'
+;   jne isMult
+;   call addition
 
-isMult:
-  cmp byte [ecx],'*'
-  jne isAnd
-  call multiplication
+; isMult:
+;   cmp byte [ecx],'*'
+;   jne isAnd
+;   call multiplication
 
-isAnd:
-  cmp byte [ecx],'&'
-  jne isNum
-  call bitwise_and
+; isAnd:
+;   cmp byte [ecx],'&'
+;   jne isNum
+;   call bitwise_and
 
-isNum:
-  cmp byte [ecx],'n'
-  jne isDup
-  call is_num_of
+; isNum:
+;   cmp byte [ecx],'n'
+;   jne isDup
+;   call is_num_of
 
-isDup:
-  cmp byte [ecx],'d'
-  jne isEnd
-  call duplicate
+; isDup:
+;   cmp byte [ecx],'d'
+;   jne isEnd
+;   call duplicate
 
-isEnd:
-  cmp byte [ecx],'q'
-  jne return
-  ;; add code to free all memory
-  push dword [result]
-  push for
-  call printf
-  add esp, 8
-  push eax 1
-  push ebx 0
-  int 0x80
+; isEnd:
+;   cmp byte [ecx],'q'
+;   jne return
+;   ;; add code to free all memory
+;   push dword [result]
+;   push for
+;   call printf
+;   add esp, 8
+;   mov eax,1
+;   mov ebx,0
+;   int 0x80
 
 return:
   add dword [result], 1 ;; Add 1 to operation counter
@@ -188,20 +188,29 @@ pop_and_print:
   mov dword [num],0
   reverse:
     add dword [num],1
-    push byte [ecx]
+    push dword [ecx]
     push eax
     call create_link
     add esp,4
-    mov dword [ecx],[ecx+1]
+    mov dword ecx,[ecx+1]
     cmp dword [ecx],0
     jne reverse
   push dword [num]
   call calloc
   add esp,0
   
-  mov edx,
-  recreate:
-    
+  mov edx,temp
+  recreate: 
+    mov byte [eax],[edx]
+    inc eax
+    mov dword edx,[edx+1]
+    cmp dword [edx],0
+    jne recreate
+  sub dword eax,[num]
+  push eax
+  push for
+  call printf
+  add esp,4
 
   popad                    	         		
   mov esp, ebp			
