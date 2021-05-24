@@ -181,26 +181,7 @@ pop_and_print:
   mov ebp, esp         		
   pushad 
   mov dword ecx,[last]
-  mov edx,0
-  mov eax,3
-  loop1:
-    
-    jne loop1
-  push dword [num]
-  push for
-  call printf
-  add esp,8
-  mov dword ecx,[last]
-  ; fix freeing 
-  ;free
-  ;loop2:
-  ;  mov dword ebx,[ecx+1]
-   ; push ecx
-   ; call free
-  ; ; add esp,4
-  ;  mov ecx,ebx
-   ; cmp ecx,0
-  ;  jne loop1
+  
   popad                    	         		
   mov esp, ebp			
   pop ebp				
@@ -211,7 +192,8 @@ addition:
   push ebp              		
   mov ebp, esp         		
   pushad   
-
+  mov dword ecx,[last]
+  mov dword ebx,[last-4]
 
   popad                    	         		
   mov esp, ebp			
