@@ -92,7 +92,7 @@ isAnd:
 isNum:
   cmp byte [ecx],'n'
   jne isDup
-  call is_num_of
+  call num_of
 
 isDup:
   cmp byte [ecx],'d'
@@ -181,7 +181,7 @@ pop_and_print:
   mov ebp, esp         		
   pushad 
   mov dword ecx,[last]
-  
+ 
   popad                    	         		
   mov esp, ebp			
   pop ebp				
@@ -192,10 +192,46 @@ addition:
   push ebp              		
   mov ebp, esp         		
   pushad   
-  mov dword ecx,[last]
-  mov dword ebx,[last-4]
+  mov dword ebx,[last]  ;; put the adress of the next two operands in to the registers
+  mov dword ecx,[last-4]  
+  
 
   popad                    	         		
   mov esp, ebp			
   pop ebp				
   ret  
+
+
+
+pad: ;; This function ensures the next two operands are of identical length
+  push ebp              		
+  mov ebp, esp         		
+  pushad   
+  mov dword ebx,[last]  
+  mov dword ecx,[last-4]  
+  call num_of
+  move edx, eax
+  sub dword [last], 4
+  call num_of
+  add dword [last], 4
+  cmp edx, eax
+  jb secondGreater
+  sub edx, eax
+loop:
+
+
+  dec edx;
+  cmp edx, 0;
+  jg loop
+
+secondGreater:
+
+  popad                    	         		
+  mov esp, ebp			
+  pop ebp				
+  ret  
+
+
+while(list1->next == NULL && list2->next == NULL){
+  
+}
