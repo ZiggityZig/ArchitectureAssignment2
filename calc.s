@@ -181,57 +181,7 @@ pop_and_print:
   mov ebp, esp         		
   pushad 
   mov dword ecx,[last]
-<<<<<<< HEAD
- 
-=======
-  push dword 5
-  call malloc
-  add esp,4
-  mov dword [temp],eax
-  mov dword [num],0
-  reverse:
-    add dword [num],1
-    push byte [ecx]
-    push eax
-    call create_link
-    add esp,4
-    mov dword [ecx],[ecx+1]
-    cmp dword [ecx],0
-    jne reverse
-  push dword [num]
-  call calloc
-  add esp,0
-  
-  mov edx,
-  recreate:
-    
-
->>>>>>> ce3b227d83274c9b1770857402e4ffe45ea5ce05
   popad                    	         		
-  mov esp, ebp			
-  pop ebp				
-  ret
-
-
-addition:
-  push ebp              		
-  mov ebp, esp         		
-  pushad   
-  mov dword ebx,[last]  ;; put the adress of the next two operands in to the registers
-  mov dword ecx,[last-4]  
-  
-
-  popad                    	         		
-  mov esp, ebp			
-  pop ebp				
-  ret  
-
-
-
-pad: ;; This function ensures the next two operands are of identical length
-  push ebp              		
-  mov ebp, esp         		
-  pushad   
   mov dword ebx,[last]  
   mov dword ecx,[last-4]  
   call num_of
