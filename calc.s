@@ -73,7 +73,7 @@ applyOperator:
 
   mov dword ecx,[ebp+8]
   cmp byte [ecx],'p' ;;if-elseif pattern - identify operator and call appropriate function
-  jne isAdd
+  ;jne isAdd
   call pop_and_print
 
  isAdd:
