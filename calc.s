@@ -76,42 +76,42 @@ applyOperator:
   jne isAdd
   call pop_and_print
 
-isAdd:
-  cmp byte [ecx],'+'
-  jne isMult
-  call addition
+ isAdd:
+   cmp byte [ecx],'+'
+   jne isAnd
+   call addition
 
-isMult:
-  cmp byte [ecx],'*'
-  jne isAnd
-  call multiplication
+ ;isMult:
+  ; cmp byte [ecx],'*'
+  ; jne isAnd
+  ; call multiplication
 
-isAnd:
-  cmp byte [ecx],'&'
-  jne isNum
-  call bitwise_and
+ isAnd:
+   cmp byte [ecx],'&'
+   jne isNum
+   call bitwise_and
 
-isNum:
-  cmp byte [ecx],'n'
-  jne isDup
-  call num_of
+ isNum:
+   cmp byte [ecx],'n'
+   jne isDup
+   call num_of_bytes
 
-isDup:
-  cmp byte [ecx],'d'
-  jne isEnd
-  call duplicate
+ isDup:
+   cmp byte [ecx],'d'
+   jne isEnd
+   call duplicate
 
-isEnd:
-  cmp byte [ecx],'q'
-  jne return
-  ;; add code to free all memory
-  push dword [result]
-  push for
-  call printf
-  add esp, 8
-  push eax 1
-  push ebx 0
-  int 0x80
+ isEnd:
+   cmp byte [ecx],'q'
+   jne return
+   ;; add code to free all memory
+   push dword [result]
+   push for
+   call printf
+   add esp, 8
+   mov eax,1
+   mov ebx,0
+   int 0x80
 
 return:
   add dword [result], 1 ;; Add 1 to operation counter
@@ -181,32 +181,150 @@ pop_and_print:
   mov ebp, esp         		
   pushad 
   mov dword ecx,[last]
+  push dword 5
+  call malloc
+  add esp,4
+  mov dword [temp],eax
+  mov dword [num],0
+  reverse:
+    add dword [num],1
+    push dword [ecx]
+    push eax
+    call create_link
+    add esp,4
+    mov dword ecx,[ecx+1]
+    cmp dword [ecx],0
+    jne reverse
+  push dword [num]
+  call calloc
+  add esp,0
+  
+  mov edx,temp
+  recreate: 
+  mov byte ebx,[edx]
+    mov byte [eax],bl
+    inc eax
+    mov dword edx,[edx+1]
+    cmp dword [edx],0
+    jne recreate
+  sub dword eax,[num]
+  push eax
+  push for
+  call printf
+  add esp,4
+
   popad                    	         		
-  mov dword ebx,[last]  
+  mov esp, ebp			
+  pop ebp				
+  ret
+
+
+addition:
+  push ebp              		
+  mov ebp, esp         		
+  pushad   
+  mov dword ebx,[last]      ;; put the adress of the next two operands in to the registers
   mov dword ecx,[last-4]  
-  call num_of
-  move edx, eax
-  sub dword [last], 4
-  call num_of
-  add dword [last], 4
-  cmp edx, eax
-  jb secondGreater
-  sub edx, eax
-loop:
-
-
-  dec edx;
-  cmp edx, 0;
-  jg loop
-
-secondGreater:
-
+  call pad
+  call num_of               ;; number of calculations is equal to number of digits
+  dec eax
+  .loop:
+    add byte [ecx], [edx]   ;;result is overloaded on to second operand
+    mov dword ecx,[ecx+1]
+    mov dword edx,[edx+1]
+    dec eax
+    cmp eax, 0
+    jg loop:
+  
+  ;; need to add code to test for overflow
+  ;; add code to free top operand
+  add dword, last ;; top of the stack will point to result
   popad                    	         		
   mov esp, ebp			
   pop ebp				
   ret  
 
+pad: ;; This function ensures the next two operands are of identical length
+  push ebp              		
+  mov ebp, esp         		
+  pushad   
+  mov dword ebx,[last]    ;; calculates the difference in length
+  mov dword ecx,[last-4]  
+  call num_of
+  mov edx, eax
+  sub dword [last], 4
+  call num_of
+  add dword [last], 4
+  sub edx, eax            ;; edx now holds the length difference
+  cmp edx, 0
+  jb secondGreater        ;; Iterates to the last link of the shorter list and adds 0s.
+  dec edx
+  .loop1:
+    mov dword ecx,[ecx+1]
+    dec edx
+    cmp edx, 0
+    jg .loop1  
+  .loop2:
+      push 0
+      push dword [ecx]
+      call create_link
+      move ecx, eax
+      dec edx
+      cmp edx, 0
+      jg .loop2
+    finish
+secondGreater:
+  add edx, eax
+  sub eax, edx
+  move edx, eax
+  .loop1:
+    mov dword ebx,[ebx+1]
+    dec edx
+    cmp edx, 0
+    jg .loop1  
+   .loop2:
+      push 0
+      push dword [ebx]
+      call create_link
+      move ecx, eax
+      dec edx
+      cmp edx, 0
+      jg .loop2
 
-while(list1->next == NULL && list2->next == NULL){
+finsh:
+  popad                    	         		
+  mov esp, ebp			
+  pop ebp				
+  ret 
+
+
+
+
+
+num_of:
+  push ebp              		
+  mov ebp, esp         		
+  pushad  
+  move ecx, [last]
+  move edx, 0
+
+
+
+  popad                    	         		
+  mov esp, ebp			
+  pop ebp				
+  ret 
+
+bitwise_and:
+  push ebp              		
+  mov ebp, esp         		
+  pushad  
+  move ecx, [last]
+  move edx, 0
   
-}
+
+
+  popad                    	         		
+  mov esp, ebp			
+  pop ebp				
+  ret 
