@@ -1,6 +1,10 @@
 section .data 
 for: db "%o",10,0
+for2: db "%c",10,0
 msg: db "calc: ",0
+deb: db "here",0
+for3: db "%s",10,0
+for4: db "%p",10,0
 
 section .bss			
 	buff: resb 60	
@@ -37,6 +41,7 @@ myCalc:
   push ebp
   mov ebp, esp
   pushad
+  
   mov dword [last],stack
   start:
   push msg
@@ -47,8 +52,8 @@ myCalc:
   push buff
   call fgets
   add esp, 12
- ; mov dword ecx,[buff]
-  cmp byte [buff], '7'
+  mov dword ecx,buff
+  cmp byte [ecx], '7'
   ja op
   cmp byte [ecx], '0'
   jb op
@@ -76,49 +81,49 @@ applyOperator:
   ;jne isAdd
   call pop_and_print
 
- isAdd:
-   cmp byte [ecx],'+'
-   jne isAnd
-   call addition
+;  isAdd:
+;    cmp byte [ecx],'+'
+;    jne isAnd
+;    call addition
 
- ;isMult:
-  ; cmp byte [ecx],'*'
-  ; jne isAnd
-  ; call multiplication
+;  ;isMult:
+;   ; cmp byte [ecx],'*'
+;   ; jne isAnd
+;   ; call multiplication
 
- isAnd:
-   cmp byte [ecx],'&'
-   jne isNum
-   call bitwise_and
+;  isAnd:
+;    cmp byte [ecx],'&'
+;    jne isNum
+;    call bitwise_and
 
- isNum:
-   cmp byte [ecx],'n'
-   jne isDup
-   call num_of_bytes
+;  isNum:
+;    cmp byte [ecx],'n'
+;    jne isDup
+;    call num_of_bytes
 
- isDup:
-   cmp byte [ecx],'d'
-   jne isEnd
-   call duplicate
+;  isDup:
+;    cmp byte [ecx],'d'
+;    jne isEnd
+;    call duplicate
 
- isEnd:
-   cmp byte [ecx],'q'
-   jne return
-   ;; add code to free all memory
-   push dword [result]
-   push for
-   call printf
-   add esp, 8
-   mov eax,1
-   mov ebx,0
-   int 0x80
+;  isEnd:
+;    cmp byte [ecx],'q'
+;    jne return
+;    ;; add code to free all memory
+;    push dword [result]
+;    push for
+;    call printf
+;    add esp, 8
+;    mov eax,1
+;    mov ebx,0
+;    int 0x80
 
-return:
-  add dword [result], 1 ;; Add 1 to operation counter
-  popad                    	         		
-  mov esp, ebp			
-  pop ebp				
-  ret
+; return:
+;   add dword [result], 1 ;; Add 1 to operation counter
+;   popad                    	         		
+;   mov esp, ebp			
+;   pop ebp				
+;   ret
 
 
 addNum:
@@ -138,6 +143,7 @@ addNum:
     inc ecx
     cmp byte [ecx],10
     jne lastchar
+  dec ecx
   conv:
     mov edx,0
     mov dl,[ecx]
@@ -150,6 +156,20 @@ addNum:
     sub dword [num],1
     cmp dword [num],0
     jne conv
+  ; pushad
+  ; mov dword ecx , [last]
+  ; mov edx,0
+  ; mov byte dl,[ecx]
+  ; push edx
+  ; push for
+  ; call printf
+  ; add esp,8
+  ; push last
+  ; push for4
+  ; call printf
+  ; ad 
+  ; popad
+ 
   popad                    	         		
   mov esp, ebp			
   pop ebp				
@@ -159,19 +179,24 @@ addNum:
 create_link:
   push ebp              		
   mov ebp, esp         		
-  pushad   
-  sub esp,4                			
+  pushad
+  ;sub esp,4   
+  push ecx             			
 	push dword 5
   call malloc
   add esp,4
-  mov dword ecx,[ebp+8]
+  pop ecx
+
+  mov dword ebx,[ebp+8]
   mov dword edx,[ebp+12]
   mov byte [eax],dl
   mov dword [eax+1],0
-  mov dword [ecx+1],eax
-  mov [ebp-4], ebx
-  popad
-  mov eax, [ebp-4]                    	         		
+  mov dword [ebx+1],eax
+  
+  ;mov [ebp-4], eax
+ 
+  ;popad
+  ;mov eax, [ebp-4]                    	         		
   mov esp, ebp			
   pop ebp				
   ret
@@ -179,21 +204,33 @@ create_link:
 pop_and_print:
   push ebp              		
   mov ebp, esp         		
-  pushad 
-  mov dword ecx,[last]
+ ; pushad 
+  
   push dword 5
   call malloc
   add esp,4
+  pushad
+  mov dword ecx , [last]
+  mov edx,0
+  mov byte dl,[ecx]
+  push edx
+  push for
+  call printf
+  add esp,8
+  popad
+  mov dword ecx,[last]
   mov dword [temp],eax
   mov dword [num],0
+  mov edx,0
   reverse:
     add dword [num],1
-    push dword [ecx]
+    mov byte dl,[ecx]
+    push edx
     push eax
     call create_link
-    add esp,4
+    add esp,8
     mov dword ecx,[ecx+1]
-    cmp dword [ecx],0
+    cmp ecx,0
     jne reverse
   push dword [num]
   call calloc
@@ -211,9 +248,9 @@ pop_and_print:
   push eax
   push for
   call printf
-  add esp,4
+  add esp,8
 
-  popad                    	         		
+  ;popad                    	         		
   mov esp, ebp			
   pop ebp				
   ret
@@ -229,16 +266,17 @@ addition:
   call num_of               ;; number of calculations is equal to number of digits
   dec eax
   .loop:
-    add byte [ecx], [edx]   ;;result is overloaded on to second operand
+    mov byte edx,[ebx]
+    add byte [ecx], dl   ;;result is overloaded on to second operand
     mov dword ecx,[ecx+1]
-    mov dword edx,[edx+1]
+    mov dword ebx,[ebx+1]
     dec eax
     cmp eax, 0
-    jg loop:
+    jg .loop
   
   ;; need to add code to test for overflow
   ;; add code to free top operand
-  add dword, last ;; top of the stack will point to result
+  add dword [last],4 ;; top of the stack will point to result
   popad                    	         		
   mov esp, ebp			
   pop ebp				
@@ -268,7 +306,7 @@ pad: ;; This function ensures the next two operands are of identical length
       push 0
       push dword [ecx]
       call create_link
-      move ecx, eax
+      mov ecx, eax
       dec edx
       cmp edx, 0
       jg .loop2
@@ -276,7 +314,7 @@ pad: ;; This function ensures the next two operands are of identical length
 secondGreater:
   add edx, eax
   sub eax, edx
-  move edx, eax
+  mov edx, eax
   .loop1:
     mov dword ebx,[ebx+1]
     dec edx
@@ -286,7 +324,7 @@ secondGreater:
       push 0
       push dword [ebx]
       call create_link
-      move ecx, eax
+      mov ecx, eax
       dec edx
       cmp edx, 0
       jg .loop2
@@ -305,8 +343,8 @@ num_of:
   push ebp              		
   mov ebp, esp         		
   pushad  
-  move ecx, [last]
-  move edx, 0
+  mov ecx, [last]
+  mov edx, 0
 
 
 
@@ -319,8 +357,8 @@ bitwise_and:
   push ebp              		
   mov ebp, esp         		
   pushad  
-  move ecx, [last]
-  move edx, 0
+  mov ecx, [last]
+  mov edx, 0
   
 
 
