@@ -144,6 +144,14 @@ addNum:
     cmp byte [ecx],10
     jne lastchar
   dec ecx
+  mov edx,0
+  mov dl,[ecx]
+  sub dl,'0'
+  mov byte [eax],dl
+  mov dword [eax+1],0
+  sub dword [num],1
+  cmp dword [num],0
+  je endconv
   conv:
     mov edx,0
     mov dl,[ecx]
@@ -157,19 +165,15 @@ addNum:
     cmp dword [num],0
     jne conv
   ; pushad
-  ; mov dword ecx , [last]
+  ; mov dword ecx,[last]
+  ; mov dword ebx,[ecx]
   ; mov edx,0
-  ; mov byte dl,[ecx]
+  ; mov byte dl,[ebx]
   ; push edx
   ; push for
   ; call printf
-  ; add esp,8
-  ; push last
-  ; push for4
-  ; call printf
-  ; ad 
   ; popad
- 
+ endconv:
   popad                    	         		
   mov esp, ebp			
   pop ebp				
@@ -206,47 +210,80 @@ pop_and_print:
   mov ebp, esp         		
  ; pushad 
   
-  push dword 5
-  call malloc
-  add esp,4
-  pushad
-  mov dword ecx , [last]
-  mov edx,0
-  mov byte dl,[ecx]
-  push edx
-  push for
-  call printf
-  add esp,8
-  popad
+  ; push dword 5
+  ; call malloc
+  ; add esp,4
+  ; pushad
+  ; mov dword ecx , [last]
+  ; mov edx,0
+  ; mov dword ebx,[ecx]
+  ; mov byte dl,[ebx]
+  ; push edx
+  ; push for
+  ; call printf
+  ; add esp,8
+  ; popad
   mov dword ecx,[last]
-  mov dword [temp],eax
+  mov dword ecx,[ecx]
+  ;mov dword [temp],eax
   mov dword [num],0
   mov edx,0
-  reverse:
+  ; reverse:
+  ;   add dword [num],1
+  ;   mov byte dl,[ecx]
+  ;   push edx
+  ;   push eax
+  ;   call create_link
+  ;   add esp,8
+  ;   mov dword ecx,[ecx+1]
+  ;   cmp ecx,0
+  ;   jne reverse
+
+  ; add dword [num],1
+  count:
     add dword [num],1
-    mov byte dl,[ecx]
-    push edx
-    push eax
-    call create_link
-    add esp,8
     mov dword ecx,[ecx+1]
     cmp ecx,0
-    jne reverse
+    jne count
+
   push dword [num]
-  call calloc
+  call malloc
   add esp,0
+  ;mov edx,temp
   
-  mov edx,temp
-  recreate: 
-  mov byte ebx,[edx]
+  ; recreate: 
+  ; mov byte ebx,[edx]
+  ;   mov byte [eax],bl
+  ;   add byte [eax],'0'
+  ;   inc eax
+  ;   mov dword edx,[edx+1]
+  ;   cmp dword [edx],0
+  ;   jne recreate
+  mov dword ecx,[last]
+  mov dword ecx,[ecx]
+  join:
+    mov byte bl,[ecx]
     mov byte [eax],bl
     inc eax
-    mov dword edx,[edx+1]
-    cmp dword [edx],0
-    jne recreate
+    mov dword ecx,[ecx+1]
+    cmp ecx,0
+    jne join
   sub dword eax,[num]
+  print:
+    mov edx,0
+    mov dl,7
+    mov byte bl,[eax]
+    and dl,bl
+    pushad
+    push edx
+    push for
+    call printf
+    add esp,8
+    popad
+    shr [eax],3
+    
   push eax
-  push for
+  push for3
   call printf
   add esp,8
 
