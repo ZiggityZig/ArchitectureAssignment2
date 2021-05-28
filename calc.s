@@ -1,6 +1,26 @@
+%macro printByte 2
+  pushad
+  mov edx ,%1
+  mov byte bh,0
+  push edx
+  push %2
+  call printf
+  add esp,8
+  popad
+%endmacro
+
+%macro shiftRight 0
+%%shiftR:
+  shr dl,1
+  dec dh
+  cmp byte dh,0
+  jne %%shiftR
+%endmacro
+
 section .data 
+forOnl: db "%o",10,0
+forO: db "%o",0
 for: db "%o",10,0
-for2: db "%c",10,0
 msg: db "calc: ",0
 deb: db "here",0
 for3: db "%s",10,0
@@ -14,6 +34,7 @@ section .bss
   last: resd 1
   num: resd 1
   temp: resd 1
+  carry: resd 1
 
 section .text
   align 16
@@ -118,12 +139,12 @@ applyOperator:
 ;    mov ebx,0
 ;    int 0x80
 
-; return:
-;   add dword [result], 1 ;; Add 1 to operation counter
-;   popad                    	         		
-;   mov esp, ebp			
-;   pop ebp				
-;   ret
+return:
+  add dword [result], 1 ;; Add 1 to operation counter
+  popad                    	         		
+  mov esp, ebp			
+  pop ebp				
+  ret
 
 
 addNum:
@@ -153,6 +174,7 @@ addNum:
   cmp dword [num],0
   je endconv
   conv:
+    dec ecx
     mov edx,0
     mov dl,[ecx]
     sub dl,'0'
@@ -160,7 +182,7 @@ addNum:
     push eax
     call create_link
     add esp,8
-    dec ecx
+    
     sub dword [num],1
     cmp dword [num],0
     jne conv
@@ -208,59 +230,27 @@ create_link:
 pop_and_print:
   push ebp              		
   mov ebp, esp         		
- ; pushad 
-  
-  ; push dword 5
-  ; call malloc
-  ; add esp,4
-  ; pushad
-  ; mov dword ecx , [last]
-  ; mov edx,0
-  ; mov dword ebx,[ecx]
-  ; mov byte dl,[ebx]
-  ; push edx
-  ; push for
-  ; call printf
-  ; add esp,8
-  ; popad
+ 
   mov dword ecx,[last]
   mov dword ecx,[ecx]
   ;mov dword [temp],eax
   mov dword [num],0
   mov edx,0
-  ; reverse:
-  ;   add dword [num],1
-  ;   mov byte dl,[ecx]
-  ;   push edx
-  ;   push eax
-  ;   call create_link
-  ;   add esp,8
-  ;   mov dword ecx,[ecx+1]
-  ;   cmp ecx,0
-  ;   jne reverse
-
-  ; add dword [num],1
+  
   count:
     add dword [num],1
     mov dword ecx,[ecx+1]
     cmp ecx,0
     jne count
 
+  
   push dword [num]
   call malloc
-  add esp,0
-  ;mov edx,temp
+  add esp,4
   
-  ; recreate: 
-  ; mov byte ebx,[edx]
-  ;   mov byte [eax],bl
-  ;   add byte [eax],'0'
-  ;   inc eax
-  ;   mov dword edx,[edx+1]
-  ;   cmp dword [edx],0
-  ;   jne recreate
   mov dword ecx,[last]
   mov dword ecx,[ecx]
+  mov ebx,0
   join:
     mov byte bl,[ecx]
     mov byte [eax],bl
@@ -268,24 +258,71 @@ pop_and_print:
     mov dword ecx,[ecx+1]
     cmp ecx,0
     jne join
-  sub dword eax,[num]
-  print:
-    mov edx,0
-    mov dl,7
-    mov byte bl,[eax]
-    and dl,bl
-    pushad
-    push edx
-    push for
-    call printf
-    add esp,8
-    popad
-    shr [eax],3
-    
-  push eax
-  push for3
-  call printf
-  add esp,8
+  inc eax
+  mov byte [carry],0
+  mov edx,0
+  mov ebx,1
+  mov ecx,0
+  Print:
+   sub eax,1
+   mov byte bh,[eax] 
+   digit:
+    cmp byte bl,0
+    je nextB1
+  
+    mov cl,bh
+    and cl,bl
+    cmp byte [carry],0
+    je nocar
+    cmp byte dh,2
+    je carr2
+    cmp byte dh,1
+    jne carr1
+    carr2:
+    shl cl,2
+    dec dh
+    jmp nocar
+    carr1:
+    shl cl,1
+    inc dh
+    jmp nocar
+    nocar:
+    add dl,cl
+    shl bl,1
+    inc ch
+    cmp ch,3
+    jne digit
+  ;pushad
+  cmp byte [carry],1
+  je printDig
+  cmp byte dh,0
+  je printDig
+  mov ch,dh
+  shiftRight
+  printDig:
+  printByte edx,forO
+  mov dl,0
+  mov dh,ch
+  mov ch,0
+  cmp byte [carry],1
+  je yescar
+  add dh,3
+  jmp digit
+  yescar:
+  mov byte [carry],0
+  jmp digit
+  nextB1:
+  cmp byte dh,0
+  je nextB2
+  shiftRight
+  mov byte [carry],1
+  nextB2:
+  mov bl,1
+  mov dh,ch
+  sub dword [num],1
+  cmp dword [num],0
+  jne Print
+  printByte edx,forOnl
 
   ;popad                    	         		
   mov esp, ebp			
