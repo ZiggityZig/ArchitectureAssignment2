@@ -313,7 +313,7 @@ pop_and_print:
   ret
 
 
-addition:
+addition: 
   push ebp              		
   mov ebp, esp         		
   pushad   
@@ -352,7 +352,7 @@ addition:
     push ecx
     call create_link
     add esp,8
-    
+
   ;; need to add code to test for overflow
   .end:
     popStack
