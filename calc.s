@@ -56,6 +56,7 @@ section .bss
   num: resd 1
   temp: resd 1
   carryFlag: resb 1
+  prev: resd 1
 
 section .text
   align 16
@@ -318,14 +319,16 @@ addition:
   mov ebp, esp         		
   pushad   
   mov dword ebx,[last]      ;; put the adress of the next two operands in to the registers
-  mov dword ecx,[last-4]
+  sub dword [last],4
+  mov dword ecx,[last]
+  add dword [last],4
   mov dword ebx,[ebx] 
   mov dword ecx,[ecx]  
+
   call pad
   countDigits             ;; number of calculations is equal to number of digits
-  ;dec eax
   mov byte [carryFlag],0
-  .loop:
+  addition_loop:
     mov byte dl,[ebx]
     add byte [ecx], dl   ;;result is overloaded on to second operand
     mov byte dl, [carryFlag]
@@ -334,22 +337,23 @@ addition:
     jae carry
     mov byte [carryFlag], 0
     jmp finally
-  carry:
-    mov byte [carry], 1  
-    sub byte [ecx], 8  
+    carry:
+      mov byte [carryFlag], 1  
+      sub byte [ecx], 8  
 
-  .finally:
-    mov dword ecx,[ecx+1]
-    mov dword ebx,[ebx+1]
-    dec eax
-    cmp eax, 0
-    jg .loop
+    finally:
+      mov dword [prev],ecx   ;Used to keep track of last link in the case of overflow
+      mov dword ecx,[ecx+1]
+      mov dword ebx,[ebx+1]
+      dec eax
+      cmp eax, 0
+      jg addition_loop
 
     cmp byte [carryFlag], 1
     jne .end
     mov edx,1
     push edx
-    push ecx
+    push dword [prev]
     call create_link
     add esp,8
 
@@ -361,12 +365,14 @@ addition:
     pop ebp				
     ret  
 
-pad: ;; This function ensures the next two operands are of identical length
+pad:                      ;; This function ensures the next two operands are of identical length
   push ebp              		
   mov ebp, esp         		
   pushad   
   mov dword ebx,[last]    ;; calculates the difference in length
-  mov dword ecx,[last-4] 
+  sub dword [last],4
+  mov dword ecx,[last]
+  add dword [last],4
   mov dword ebx,[ebx] 
   mov dword ecx,[ecx]   
   countDigits
@@ -374,46 +380,46 @@ pad: ;; This function ensures the next two operands are of identical length
   sub dword [last], 4
   countDigits
   add dword [last], 4
+  cmp edx, eax  
+  je finish  
+  cmp edx, eax          
   sub edx, eax            ;; edx now holds the length difference
-  cmp edx, 0
   jb secondGreater        ;; Iterates to the last link of the shorter list and adds 0s.
-  ;dec edx
   .loop1:
-    mov dword ecx,[ecx+1]
-    ;dec edx
+    mov dword [prev],ecx
+    mov dword ecx, [ecx+1]
     cmp ecx, 0
-    jg .loop1  
+    jg .loop1 
+  mov dword ecx,[prev] 
   .loop2:
       push 0
-      push dword [ecx]
+      push ecx
       call create_link
       add esp,8
-      ;mov ecx, eax
+      mov ecx, eax
       dec edx
       cmp edx, 0
       jg .loop2
-    finish
+    jmp finish
 secondGreater:
-  ; add edx, eax
-  ; sub eax, edx
-  ; mov edx, eax
   neg edx
   .loop1:
-    mov dword ebx,[ebx+1]
-    
+    mov dword [prev], ebx
+    mov dword ebx, [ebx+1]
     cmp ebx, 0
     jg .loop1  
-   .loop2:
-      push 0
-      push dword [ebx]
-      call create_link
-      add esp,8
-      ;mov ecx, eax
-      dec edx
-      cmp edx, 0
-      jg .loop2
+  mov dword ebx,[prev]
+  .loop2:
+    push 0
+    push ebx
+    call create_link
+    add esp,8
+    mov ebx, eax 
+    dec edx
+    cmp edx, 0
+    jg .loop2
 
-finsh:
+finish:
   popad                    	         		
   mov esp, ebp			
   pop ebp				
