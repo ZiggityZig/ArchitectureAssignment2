@@ -15,6 +15,29 @@
   popad
 %endmacro
 
+%macro popStack 0
+  pushad
+  push last
+  call freeList
+  add esp,4
+  sub dword [last],4
+  popad
+%endmacro
+
+
+%macro countDigits 0         ; counts the number of links in the last list and saves them in eax
+push ecx
+mov dword ecx,[last]
+mov dword ecx,[ecx]
+mov eax,0
+%%count:
+    add eax,1
+    mov dword ecx,[ecx+1]
+    cmp ecx,0
+    jne %%count
+pop ecx
+%endmacro
+
 section .data 
 newLine: db 10,0
 forO: db "%o",0
@@ -100,10 +123,10 @@ applyOperator:
   jne isAdd
   call pop_and_print
 
-;  isAdd:
-;    cmp byte [ecx],'+'
-;    jne isAnd
-;    call addition
+ isAdd:
+   cmp byte [ecx],'+'
+   jne isNum
+   call addition
 
 ;  ;isMult:
 ;   ; cmp byte [ecx],'*'
@@ -115,10 +138,10 @@ applyOperator:
 ;    jne isNum
 ;    call bitwise_and
 
-;  isNum:
-;    cmp byte [ecx],'n'
-;    jne isDup
-;    call num_of_bytes
+ isNum:
+   cmp byte [ecx],'n'
+   jne isEnd
+   call num_of_bytes
 
 ;  isDup:
 ;    cmp byte [ecx],'d'
@@ -204,7 +227,7 @@ addNum:
 create_link:
   push ebp              		
   mov ebp, esp         		
-  pushad
+  ;pushad
   ;sub esp,4   
   push ecx             			
 	push dword 5
@@ -298,7 +321,7 @@ addition:
   mov dword ebx,[ebx] 
   mov dword ecx,[ecx]  
   call pad
-  call num_of               ;; number of calculations is equal to number of digits
+  countDigits             ;; number of calculations is equal to number of digits
   ;dec eax
   .loop:
     mov byte dl,[ebx]
@@ -325,10 +348,10 @@ pad: ;; This function ensures the next two operands are of identical length
   mov dword ecx,[last-4] 
   mov dword ebx,[ebx] 
   mov dword ecx,[ecx]   
-  call num_of
+  countDigits
   mov edx, eax
   sub dword [last], 4
-  call num_of
+  countDigits
   add dword [last], 4
   sub edx, eax            ;; edx now holds the length difference
   cmp edx, 0
@@ -379,16 +402,45 @@ finsh:
 
 
 
-num_of:
+num_of_bytes:
   push ebp              		
-  mov ebp, esp         		
-  pushad  
-  mov ecx, [last]
-  mov edx, 0
-
-
-
-  popad                    	         		
+  mov ebp, esp         		  
+  countDigits
+  mov edx,1
+  and edx,eax
+  shr eax,1
+  add eax,edx
+  mov dword [num],eax 
+  popStack
+  add dword [last],4
+  push 5
+  call malloc
+  add esp,4
+  mov dword ecx,[last]
+  mov dword [ecx],eax
+  mov dword [last],ecx
+  mov edx,7
+  and dword edx,[num]
+  mov dword ebx, [num]
+  shr dword ebx,3
+  mov dword [num],ebx
+  mov byte [eax],dl
+  mov dword [eax+1],0
+  cmp dword [num],0
+  je .endloop1
+  .loop1:
+    mov edx,7
+    and dword edx,[num]
+    mov dword ebx, [num]
+    shr dword ebx,3
+    mov dword [num],ebx
+    push edx
+    push eax
+    call create_link
+    add esp,8
+    cmp dword [num],0
+    jne .loop1
+  .endloop1:
   mov esp, ebp			
   pop ebp				
   ret 
