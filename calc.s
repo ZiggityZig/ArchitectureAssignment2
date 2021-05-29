@@ -29,7 +29,7 @@ newLine: db 10,0
 forO: db "%o",0
 for: db "%o",10,0
 msg: db "calc: ",0
-deb: db "here",0
+deb: db "here",10,0
 for3: db "%s",10,0
 for4: db "%p",10,0
 
@@ -68,7 +68,7 @@ popad
 myCalc:
   push ebp
   mov ebp, esp
-  pushad
+  ;pushad
   
   mov dword [last],stack
   start:
@@ -93,7 +93,8 @@ myCalc:
   push ecx
   call applyOperator
   add esp,4
-  popad                    	         		
+  jmp start
+  ;popad                    	         		
   mov esp, ebp			
   pop ebp				
   ret
@@ -203,6 +204,7 @@ addNum:
   ; call printf
   ; popad
  endconv:
+ mov dword ecx,[last]
   popad                    	         		
   mov esp, ebp			
   pop ebp				
@@ -219,7 +221,6 @@ create_link:
   call malloc
   add esp,4
   pop ecx
-
   mov dword ebx,[ebp+8]
   mov dword edx,[ebp+12]
   mov byte [eax],dl
@@ -237,9 +238,10 @@ create_link:
 pop_and_print:
   push ebp              		
   mov ebp, esp         		
- 
+
   mov dword ecx,[last]
   mov dword ecx,[ecx]
+  
   ;mov dword [temp],eax
   mov dword [num],0
   mov edx,0
@@ -269,14 +271,14 @@ pop_and_print:
     jne join
 
   mov dword ecx,[last]  ; pop
-  mov dword ecx,[ecx]
-  push ecx
+  ;mov dword ecx,[ecx]
+  push last
   call freeList
   add esp,4
-  mov dword ecx,[last]
-  sub ecx,4
-  mov dword [last],ecx
-   
+  ; mov dword ecx,[last]
+  ; sub ecx,4
+  ; mov dword [last],ecx
+
   mov edx,0         ;print
   Print:            ; printing in reverse order
     sub eax,1
@@ -285,7 +287,10 @@ pop_and_print:
     sub dword [num],1
     cmp dword [num],0
     jne Print
-    printNewLine                    	         		
+    printNewLine 
+
+  sub dword [last],4  
+  mov dword ecx,[last]
   mov esp, ebp			
   pop ebp				
   ret
@@ -407,6 +412,16 @@ freeList:
   push ebp              		
   mov ebp, esp      
   mov dword ecx,[ebp+8]
+  mov ebx,[ecx]     ;free first link
+  mov ebx,[ebx]
+  pushad
+    push ebx
+    call free
+    add esp,4
+    popad
+  mov ecx,[ebx]
+  cmp ecx,0
+  je endloop      ; if there's more than one continue to the others
   freeLoop:
     mov dword ebx,[ecx+1]
     pushad
@@ -417,6 +432,7 @@ freeList:
     mov ecx,ebx
     cmp ecx,0
     jne freeLoop
+  endloop:
   mov esp, ebp			
   pop ebp				
   ret 
