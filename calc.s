@@ -403,7 +403,7 @@ finsh:
 
 
 num_of_bytes:
-  push ebp              		
+  push ebp                ;; Calculate number of bytes, save to eax and pop the number from stack
   mov ebp, esp         		  
   countDigits
   mov edx,1
@@ -415,7 +415,7 @@ num_of_bytes:
   add dword [last],4
   push 5
   call malloc
-  add esp,4
+  add esp,4               ;; Do-While loop to add number of bytes to the stack
   mov dword ecx,[last]
   mov dword [ecx],eax
   mov dword [last],ecx
@@ -429,7 +429,7 @@ num_of_bytes:
   cmp dword [num],0
   je .endloop1
   .loop1:
-    mov edx,7
+    mov edx,7            ;; Iteration done by masking the number with 7, dividing by 8 and comparing to 0
     and dword edx,[num]
     mov dword ebx, [num]
     shr dword ebx,3
