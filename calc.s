@@ -55,6 +55,7 @@ section .bss
   last: resd 1
   num: resd 1
   temp: resd 1
+  carryFlag: resb 1
 
 section .text
   align 16
@@ -323,22 +324,42 @@ addition:
   call pad
   countDigits             ;; number of calculations is equal to number of digits
   ;dec eax
+  mov byte [carryFlag],0
   .loop:
     mov byte dl,[ebx]
     add byte [ecx], dl   ;;result is overloaded on to second operand
+    mov byte dl, [carryFlag]
+    add byte [ecx],dl
+    cmp byte [ecx], 8
+    jae carry
+    mov byte [carryFlag], 0
+    jmp finally
+  carry:
+    mov byte [carry], 1  
+    sub byte [ecx], 8  
+
+  .finally:
     mov dword ecx,[ecx+1]
     mov dword ebx,[ebx+1]
     dec eax
     cmp eax, 0
     jg .loop
-  
+
+    cmp byte [carryFlag], 1
+    jne .end
+    mov edx,1
+    push edx
+    push ecx
+    call create_link
+    add esp,8
+    
   ;; need to add code to test for overflow
-  ;; add code to free top operand
-  add dword [last],4 ;; top of the stack will point to result
-  popad                    	         		
-  mov esp, ebp			
-  pop ebp				
-  ret  
+  .end:
+    popStack
+    popad                    	         		
+    mov esp, ebp			
+    pop ebp				
+    ret  
 
 pad: ;; This function ensures the next two operands are of identical length
   push ebp              		
