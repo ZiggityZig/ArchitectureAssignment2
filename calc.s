@@ -1,7 +1,6 @@
-%macro printByte 2
+%macro printReg 2
   pushad
   mov edx ,%1
-  mov byte bh,0
   push edx
   push %2
   call printf
@@ -14,14 +13,6 @@
   call printf
   add esp,4
   popad
-%endmacro
-
-%macro shiftRight 0
-%%shiftR:
-  shr dl,1
-  dec dh
-  cmp byte dh,0
-  jne %%shiftR
 %endmacro
 
 section .data 
@@ -41,7 +32,6 @@ section .bss
   last: resd 1
   num: resd 1
   temp: resd 1
-  carry: resd 1
 
 section .text
   align 16
@@ -63,7 +53,7 @@ main:
   pushfd
   call myCalc
   popfd 
-popad
+  popad
 
 myCalc:
   push ebp
@@ -107,7 +97,7 @@ applyOperator:
 
   mov dword ecx,[ebp+8]
   cmp byte [ecx],'p' ;;if-elseif pattern - identify operator and call appropriate function
-  ;jne isAdd
+  jne isAdd
   call pop_and_print
 
 ;  isAdd:
@@ -135,17 +125,17 @@ applyOperator:
 ;    jne isEnd
 ;    call duplicate
 
-;  isEnd:
-;    cmp byte [ecx],'q'
-;    jne return
-;    ;; add code to free all memory
-;    push dword [result]
-;    push for
-;    call printf
-;    add esp, 8
-;    mov eax,1
-;    mov ebx,0
-;    int 0x80
+ isEnd:
+   cmp byte [ecx],'q'
+   jne return
+   ;; add code to free all memory
+   push dword [result]
+   push for
+   call printf
+   add esp, 8
+   mov eax,1
+   mov ebx,0
+   int 0x80
 
 return:
   add dword [result], 1 ;; Add 1 to operation counter
@@ -244,7 +234,6 @@ pop_and_print:
   
   ;mov dword [temp],eax
   mov dword [num],0
-  mov edx,0
   
   count:
     add dword [num],1
@@ -264,7 +253,7 @@ pop_and_print:
   join:                 ; saving the bytes from the linked list on the allocated space
     mov byte bl,[ecx]
     mov byte [eax],bl
-    mov byte dl,[eax]
+   ; mov byte dl,[eax]
     inc eax
     mov dword ecx,[ecx+1]
     cmp ecx,0
@@ -279,16 +268,20 @@ pop_and_print:
   ; sub ecx,4
   ; mov dword [last],ecx
 
+
+      ; now eax points to the end of the number
   mov edx,0         ;print
   Print:            ; printing in reverse order
     sub eax,1
     mov byte dl,[eax]
-    printByte edx,forO
+    printReg edx,forO
     sub dword [num],1
     cmp dword [num],0
     jne Print
     printNewLine 
-
+  push eax
+  call free
+  add esp,4
   sub dword [last],4  
   mov dword ecx,[last]
   mov esp, ebp			
@@ -301,12 +294,14 @@ addition:
   mov ebp, esp         		
   pushad   
   mov dword ebx,[last]      ;; put the adress of the next two operands in to the registers
-  mov dword ecx,[last-4]  
+  mov dword ecx,[last-4]
+  mov dword ebx,[ebx] 
+  mov dword ecx,[ecx]  
   call pad
   call num_of               ;; number of calculations is equal to number of digits
-  dec eax
+  ;dec eax
   .loop:
-    mov byte edx,[ebx]
+    mov byte dl,[ebx]
     add byte [ecx], dl   ;;result is overloaded on to second operand
     mov dword ecx,[ecx+1]
     mov dword ebx,[ebx+1]
@@ -327,7 +322,9 @@ pad: ;; This function ensures the next two operands are of identical length
   mov ebp, esp         		
   pushad   
   mov dword ebx,[last]    ;; calculates the difference in length
-  mov dword ecx,[last-4]  
+  mov dword ecx,[last-4] 
+  mov dword ebx,[ebx] 
+  mov dword ecx,[ecx]   
   call num_of
   mov edx, eax
   sub dword [last], 4
@@ -336,35 +333,38 @@ pad: ;; This function ensures the next two operands are of identical length
   sub edx, eax            ;; edx now holds the length difference
   cmp edx, 0
   jb secondGreater        ;; Iterates to the last link of the shorter list and adds 0s.
-  dec edx
+  ;dec edx
   .loop1:
     mov dword ecx,[ecx+1]
-    dec edx
-    cmp edx, 0
+    ;dec edx
+    cmp ecx, 0
     jg .loop1  
   .loop2:
       push 0
       push dword [ecx]
       call create_link
-      mov ecx, eax
+      add esp,8
+      ;mov ecx, eax
       dec edx
       cmp edx, 0
       jg .loop2
     finish
 secondGreater:
-  add edx, eax
-  sub eax, edx
-  mov edx, eax
+  ; add edx, eax
+  ; sub eax, edx
+  ; mov edx, eax
+  neg edx
   .loop1:
     mov dword ebx,[ebx+1]
-    dec edx
-    cmp edx, 0
+    
+    cmp ebx, 0
     jg .loop1  
    .loop2:
       push 0
       push dword [ebx]
       call create_link
-      mov ecx, eax
+      add esp,8
+      ;mov ecx, eax
       dec edx
       cmp edx, 0
       jg .loop2
