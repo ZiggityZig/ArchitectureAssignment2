@@ -398,10 +398,6 @@ finsh:
   pop ebp				
   ret 
 
-
-
-
-
 num_of_bytes:
   push ebp              		
   mov ebp, esp         		  
