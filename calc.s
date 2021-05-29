@@ -8,6 +8,13 @@
   add esp,8
   popad
 %endmacro
+%macro printNewLine 0
+  pushad
+  push newLine
+  call printf
+  add esp,4
+  popad
+%endmacro
 
 %macro shiftRight 0
 %%shiftR:
@@ -18,7 +25,7 @@
 %endmacro
 
 section .data 
-forOnl: db "%o",10,0
+newLine: db 10,0
 forO: db "%o",0
 for: db "%o",10,0
 msg: db "calc: ",0
@@ -244,87 +251,41 @@ pop_and_print:
     jne count
 
   
-  push dword [num]
+  push dword [num]      ; allocating space for the bytes for printing
   call malloc
   add esp,4
   
   mov dword ecx,[last]
   mov dword ecx,[ecx]
   mov ebx,0
-  join:
+  mov edx,0
+  join:                 ; saving the bytes from the linked list on the allocated space
     mov byte bl,[ecx]
     mov byte [eax],bl
+    mov byte dl,[eax]
     inc eax
     mov dword ecx,[ecx+1]
     cmp ecx,0
     jne join
-  inc eax
-  mov byte [carry],0
-  mov edx,0
-  mov ebx,1
-  mov ecx,0
-  Print:
-   sub eax,1
-   mov byte bh,[eax] 
-   digit:
-    cmp byte bl,0
-    je nextB1
-  
-    mov cl,bh
-    and cl,bl
-    cmp byte [carry],0
-    je nocar
-    cmp byte dh,2
-    je carr2
-    cmp byte dh,1
-    jne carr1
-    carr2:
-    shl cl,2
-    dec dh
-    jmp nocar
-    carr1:
-    shl cl,1
-    inc dh
-    jmp nocar
-    nocar:
-    add dl,cl
-    shl bl,1
-    inc ch
-    cmp ch,3
-    jne digit
-  ;pushad
-  cmp byte [carry],1
-  je printDig
-  cmp byte dh,0
-  je printDig
-  mov ch,dh
-  shiftRight
-  printDig:
-  printByte edx,forO
-  mov dl,0
-  mov dh,ch
-  mov ch,0
-  cmp byte [carry],1
-  je yescar
-  add dh,3
-  jmp digit
-  yescar:
-  mov byte [carry],0
-  jmp digit
-  nextB1:
-  cmp byte dh,0
-  je nextB2
-  shiftRight
-  mov byte [carry],1
-  nextB2:
-  mov bl,1
-  mov dh,ch
-  sub dword [num],1
-  cmp dword [num],0
-  jne Print
-  printByte edx,forOnl
 
-  ;popad                    	         		
+  mov dword ecx,[last]  ; pop
+  mov dword ecx,[ecx]
+  push ecx
+  call freeList
+  add esp,4
+  mov dword ecx,[last]
+  sub ecx,4
+  mov dword [last],ecx
+   
+  mov edx,0         ;print
+  Print:            ; printing in reverse order
+    sub eax,1
+    mov byte dl,[eax]
+    printByte edx,forO
+    sub dword [num],1
+    cmp dword [num],0
+    jne Print
+    printNewLine                    	         		
   mov esp, ebp			
   pop ebp				
   ret
@@ -437,6 +398,25 @@ bitwise_and:
 
 
   popad                    	         		
+  mov esp, ebp			
+  pop ebp				
+  ret 
+
+
+freeList:
+  push ebp              		
+  mov ebp, esp      
+  mov dword ecx,[ebp+8]
+  freeLoop:
+    mov dword ebx,[ecx+1]
+    pushad
+    push ecx
+    call free
+    add esp,4
+    popad
+    mov ecx,ebx
+    cmp ecx,0
+    jne freeLoop
   mov esp, ebp			
   pop ebp				
   ret 
