@@ -24,7 +24,17 @@
   popad
 %endmacro
 
+%macro pushRegs 0           ; for functions where we don't want to change the value of ecx,ebx,edx
+  push ecx
+  push ebx
+  push edx
+%endmacro
 
+%macro popRegs 0
+  pop edx
+  pop ebx
+  pop ecx
+%endmacro
 %macro countDigits 0         ; counts the number of links in the last list and saves them in eax
 push ecx
 mov dword ecx,[last]
@@ -127,7 +137,7 @@ applyOperator:
 
  isAdd:
    cmp byte [ecx],'+'
-   jne isNum
+   jne isAnd
    call addition
 
 ;  ;isMult:
@@ -135,10 +145,10 @@ applyOperator:
 ;   ; jne isAnd
 ;   ; call multiplication
 
-;  isAnd:
-;    cmp byte [ecx],'&'
-;    jne isNum
-;    call bitwise_and
+ isAnd:
+   cmp byte [ecx],'&'
+   jne isNum
+   call bitwise_and
 
  isNum:
    cmp byte [ecx],'n'
@@ -229,23 +239,18 @@ addNum:
 create_link:
   push ebp              		
   mov ebp, esp         		
-  ;pushad
-  ;sub esp,4   
-  push ecx             			
+  pushRegs   
+ ; push ecx             			
 	push dword 5
   call malloc
   add esp,4
-  pop ecx
+ ; pop ecx
   mov dword ebx,[ebp+8]
   mov dword edx,[ebp+12]
   mov byte [eax],dl
   mov dword [eax+1],0
-  mov dword [ebx+1],eax
-  
-  ;mov [ebp-4], eax
- 
-  ;popad
-  ;mov eax, [ebp-4]                    	         		
+  mov dword [ebx+1],eax    
+  popRegs                	         		
   mov esp, ebp			
   pop ebp				
   ret
@@ -410,10 +415,12 @@ secondGreater:
     jg .loop1  
   mov dword ebx,[prev]
   .loop2:
+  ;push edx
     push 0
     push ebx
     call create_link
     add esp,8
+    ;pop edx
     mov ebx, eax 
     dec edx
     cmp edx, 0
@@ -470,14 +477,29 @@ num_of_bytes:
 
 bitwise_and:
   push ebp              		
-  mov ebp, esp         		
-  pushad  
-  mov ecx, [last]
-  mov edx, 0
-  
-
-
-  popad                    	         		
+  mov ebp, esp    
+  pushad     		
+  call pad
+  mov edx, eax
+  mov dword ebx,[last]    
+  sub dword [last],4
+  mov dword ecx,[last]
+  add dword [last],4
+  mov dword ebx,[ebx] 
+  mov dword ecx,[ecx] 
+  mov eax,0
+  mov edx,0  
+  andLoop:
+    mov byte al, [ebx]
+    mov byte dl, [ecx]
+    and dl,al
+    mov byte [ecx],dl
+    mov dword ecx, [ecx+1]
+    mov dword ebx, [ebx+1]
+    cmp ecx,0
+    jne andLoop
+  popStack 
+  popad                   	         		
   mov esp, ebp			
   pop ebp				
   ret 
@@ -511,3 +533,5 @@ freeList:
   mov esp, ebp			
   pop ebp				
   ret 
+
+  
