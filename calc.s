@@ -49,18 +49,6 @@ mov eax,0
 pop ecx
 %endmacro
 
-%macro lastLink 0             ; at the end ecx points to the last link
-  mov dword ecx, [last]
-  mov dword ecx, [ecx]
-  mov dword [prev], 0
-  %%LL:
-    mov dword [prev],ecx
-    mov dword ecx, [ecx+1]
-    cmp ecx, 0
-    jg %%LL 
-  mov dword ecx,[prev] 
-%endmacro
-
 section .data 
 newLine: db 10,0
 forO: db "%o",0
@@ -100,11 +88,27 @@ section .text
   extern stdin
   extern stderr
 main:
-  pushad 
-  pushfd
+  
+  ; pop    dword ecx    ; ecx = argc
+  ; mov    esi,esp      ; esi = argv
+  ; cmp ecx,1
+  ; je startProgram
+  ; inc esi
+  ; calArg:
+  ; cmp byte [esi],'7'
+  ; ja startProgram
+  ; cmp byte [esi],'0'
+  ; jb startProgram
+  ; mov edx,8
+  ; mov byte dl,[esi]
+  ; sub byte dl,'0'
+  ; shl edx,3
+  ; mov ebx,0
+
+
+  ; startProgram:
   call myCalc
-  popfd 
-  popad
+  
 
 myCalc:
   push ebp
@@ -499,7 +503,6 @@ bitwise_and:
     cmp ecx,0
     jne andLoop
   popStack 
-  call remove_lead_zeros
   popad                   	         		
   mov esp, ebp			
   pop ebp				
@@ -537,102 +540,39 @@ freeList:
   pop ebp				
   ret 
 
-remove_lead_zeros:
-  push ebp              		
-  mov ebp, esp 
-  pushad 
-  mov edx,0
-  mov dword ecx,[last]
-  mov dword ecx,[ecx]
-  countZeros:
-    cmp byte [ecx],0
-    jne notZero
-    inc edx
-    jmp endloop2
-      notZero:
-      mov edx,0
-  endloop2:
-  mov dword ecx,[ecx+1]
-  cmp dword ecx,0
-  jne countZeros
-  countDigits
-  cmp eax,edx
-  je allZeros
-  sub eax,edx
-  mov ebx,eax
-  mov dword ecx, [last]
-  mov dword [ecx], ecx
-  getToZero:
-    mov dword ecx,[ecx+1]
-    dec ebx
-    cmp ebx,0
-    jne getToZero
-  removeZeros:
-    mov dword ebx,[ecx+1]
-    pushad
-    push ecx
-    call free
-    add esp,4
-    popad
-    mov ecx,ebx
-    cmp ecx,0
-    jne removeZeros
-  jmp removed
-  allZeros:         ; in case the number itself is zero
-  popStack
-  push dword 5
-  call malloc
-  add esp, 4
-  mov byte [eax], 0
-  mov dword [eax+1], 0
-  add dword [last], 4
-  mov dword ecx, [last]
-  mov dword [ecx], eax
-  removed:
-  popad
-  mov esp, ebp			
-  pop ebp				
-  ret 
-
-  duplicate:
+duplicate:
   push ebp              		
   mov ebp, esp 
   pushad
-  countDigits
-  mov edx, eax        ;; edx will act as the loop counter
   mov dword ebx,[last]
   mov ebx, [ebx]
   push 5
   call malloc
   add esp,4 
-  mov ecx, eax
-  mov byte [ecx], [ebx]
-  add dword [last], 4      ;; update stack to point at the new operans
+  add dword [last], 4      ;; update stack to point at the new operand
+  operand
+  mov dword ecx, [last]
+  mov [ecx], eax
+  mov edx, 0
+  mov byte dl, [ebx]
+  mov byte [ecx], dl
   mov dword [last], ecx
   mov dword ecx, [ecx+1]
   mov dword ebx, [ebx+1]
-  dec edx
-  cmp edx, 0
-  je finish_dup
-  duplication_loop:
-    push byte [ebx]
+  cmp dword [ebx + 1], 0
+  je finish_dup  
+   duplication_loop:
+    mov byte dl, [ebx]
+    push edx
     push ecx
     call create_link
     add esp, 8
     mov ecx, eax
     mov dword ecx, [ecx+1]
     mov dword ebx, [ebx+1]
-    cmp edx,0
+    cmp dword [ebx + 1],0
     jg duplication_loop
-  finish_dup:
-  add dword [last], 4      ;; update stack to point at the new operans
-  mov dword [last], ecx
-  popad                    	         		
-  mov esp, ebp			
-  pop ebp				
-  ret 
-   jg duplication_loop
-  finish_dup:
+     finish_dup:
   popad                    	         		
   mov esp, ebp			
   pop ebp				
