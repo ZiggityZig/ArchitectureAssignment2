@@ -172,13 +172,13 @@ applyOperator:
 
  isNum:
    cmp byte [ecx],'n'
-   jne isEnd
+   jne isDup
    call num_of_bytes
 
-;  isDup:
-;    cmp byte [ecx],'d'
-;    jne isEnd
-;    call duplicate
+ isDup:
+   cmp byte [ecx],'d'
+   jne isEnd
+   call duplicate
 
  isEnd:
    cmp byte [ecx],'q'
@@ -545,33 +545,36 @@ duplicate:
   mov ebp, esp 
   pushad
   mov dword ebx,[last]
-  mov ebx, [ebx]
+  mov dword ebx, [ebx]
+  pushRegs
   push 5
   call malloc
   add esp,4 
+  popRegs
   add dword [last], 4      ;; update stack to point at the new operand
-  operand
   mov dword ecx, [last]
-  mov [ecx], eax
+  mov dword [ecx], eax
   mov edx, 0
   mov byte dl, [ebx]
-  mov byte [ecx], dl
-  mov dword [last], ecx
-  mov dword ecx, [ecx+1]
+  mov byte [eax], dl
+  mov dword [eax+1],0
+ ; mov dword [last], ecx
+ ;mov dword ecx, [ecx]
+  ;mov dword ecx, [ecx+1]
   mov dword ebx, [ebx+1]
-  cmp dword [ebx + 1], 0
+  cmp ebx, 0
   je finish_dup  
    duplication_loop:
     mov byte dl, [ebx]
     push edx
-    push ecx
+    push eax
     call create_link
     add esp, 8
-    mov ecx, eax
-    mov dword ecx, [ecx+1]
+    ; mov ecx, eax
+    ; mov dword ecx, [ecx+1]
     mov dword ebx, [ebx+1]
-    cmp dword [ebx + 1],0
-    jg duplication_loop
+    cmp ebx, 0
+    jne duplication_loop
      finish_dup:
   popad                    	         		
   mov esp, ebp			
