@@ -22,6 +22,7 @@
   add esp,4
   sub dword [last],4
   popad
+  sub dword [operands], 1
 %endmacro
 
 %macro pushRegs 0           ; for functions where we don't want to change the value of ecx,ebx,edx
@@ -56,6 +57,8 @@ msg: db "calc: ",0
 deb: db "here",10,0
 for3: db "%s",10,0
 for4: db "%p",10,0
+error1: db "Error: Operand Stack Overflow",10,0
+error2: db "Error: Insufficient Number of Arguments on Stack",10,0
 
 section .bss			
 	buff: resb 60	
@@ -64,9 +67,10 @@ section .bss
   max: resd 1
   last: resd 1
   num: resd 1
-  temp: resd 1
+  operands: resd 1
   carryFlag: resb 1
   prev: resd 1
+
 
 section .text
   align 16
@@ -94,7 +98,7 @@ myCalc:
   push ebp
   mov ebp, esp
   ;pushad
-  
+  mov dword [operands],0
   mov dword [last],stack
   start:
   push msg
@@ -187,10 +191,12 @@ addNum:
   push dword 5
   call malloc
   add esp,4
+  cmp dword [operands], 0
+  je firstLink
+  add dword [last], 4
+  firstLink:
   mov dword ecx,[last]
-  add ecx,4
   mov dword [ecx],eax
-  mov dword [last],ecx
   mov dword ecx,[ebp+8]
   lastchar:
     add dword [num],1
@@ -215,21 +221,11 @@ addNum:
     push eax
     call create_link
     add esp,8
-    
     sub dword [num],1
     cmp dword [num],0
     jne conv
-  ; pushad
-  ; mov dword ecx,[last]
-  ; mov dword ebx,[ecx]
-  ; mov edx,0
-  ; mov byte dl,[ebx]
-  ; push edx
-  ; push for
-  ; call printf
-  ; popad
- endconv:
- mov dword ecx,[last]
+  endconv:
+  add dword [operands], 1
   popad                    	         		
   mov esp, ebp			
   pop ebp				
@@ -258,24 +254,26 @@ create_link:
 pop_and_print:
   push ebp              		
   mov ebp, esp         		
-
+  cmp dword [operands], 0
+  jne .start
+  pushad
+  push error2
+  call printf
+  add esp, 4
+  popad
+  jmp end_print
+  .start:
   mov dword ecx,[last]
   mov dword ecx,[ecx]
-  
-  ;mov dword [temp],eax
   mov dword [num],0
-  
   count:
     add dword [num],1
     mov dword ecx,[ecx+1]
     cmp ecx,0
     jne count
-
-  
   push dword [num]      ; allocating space for the bytes for printing
   call malloc
   add esp,4
-  
   mov dword ecx,[last]
   mov dword ecx,[ecx]
   mov ebx,0
@@ -289,17 +287,7 @@ pop_and_print:
     cmp ecx,0
     jne join
 
-  mov dword ecx,[last]  ; pop
-  ;mov dword ecx,[ecx]
-  push last
-  call freeList
-  add esp,4
-  ; mov dword ecx,[last]
-  ; sub ecx,4
-  ; mov dword [last],ecx
-
-
-      ; now eax points to the end of the number
+        ; now eax points to the end of the number
   mov edx,0         ;print
   Print:            ; printing in reverse order
     sub eax,1
@@ -312,8 +300,8 @@ pop_and_print:
   push eax
   call free
   add esp,4
-  sub dword [last],4  
-  mov dword ecx,[last]
+  popStack
+  end_print:
   mov esp, ebp			
   pop ebp				
   ret
@@ -507,16 +495,17 @@ bitwise_and:
 
 freeList:
   push ebp              		
-  mov ebp, esp      
+  mov ebp, esp 
+  pushad   
   mov dword ecx,[ebp+8]
-  mov ebx,[ecx]     ;free first link
-  mov ebx,[ebx]
+  mov dword ebx,[ecx]     ;free first link
+  mov dword ebx,[ebx]
+  mov dword ecx,[ebx+1]
   pushad
-    push ebx
-    call free
-    add esp,4
-    popad
-  mov ecx,[ebx]
+  push ebx
+  call free
+  add esp,4
+  popad 
   cmp ecx,0
   je endloop      ; if there's more than one continue to the others
   freeLoop:
@@ -530,8 +519,8 @@ freeList:
     cmp ecx,0
     jne freeLoop
   endloop:
+  popad
   mov esp, ebp			
   pop ebp				
   ret 
 
-  
