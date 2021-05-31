@@ -576,6 +576,7 @@ duplicate:
     cmp ebx, 0
     jne duplication_loop
      finish_dup:
+  add dword [operands],1
   popad                    	         		
   mov esp, ebp			
   pop ebp				
