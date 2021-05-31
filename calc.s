@@ -93,7 +93,7 @@ section .text
 main:
   push ebp
   mov ebp, esp
-  
+  mov edx,5
   mov dword ecx, [ebp+12]
   mov dword ecx, [ecx+4]
   cmp ecx,0
@@ -109,6 +109,7 @@ main:
     cmp byte [ecx],0
     jne calArg
   startProgram:
+  mov dword [max],edx
   call myCalc
   mov esp, ebp			
   pop ebp				
@@ -215,6 +216,16 @@ addNum:
   push ebp
   mov ebp, esp
   pushad
+  mov dword edx,[operands]
+  cmp dword edx,[max]
+  jb .start
+  pushad
+  push error1
+  call printf
+  add esp, 4
+  popad
+  jmp end_add_number
+  .start:
   push dword 5
   call malloc
   add esp,4
@@ -253,6 +264,7 @@ addNum:
     jne conv
   endconv:
   add dword [operands], 1
+  end_add_number:
   popad                    	         		
   mov esp, ebp			
   pop ebp				
@@ -587,13 +599,23 @@ duplicate:
   mov ebp, esp 
   pushad
   cmp dword [operands], 0
-  jne .start
+  jne check_if_full
   pushad
   push error2
   call printf
   add esp, 4
   popad
   jmp end_dup 
+  check_if_full:
+  mov dword edx,[operands]
+  cmp dword edx,[max]
+  jb .start
+  pushad
+  push error1
+  call printf
+  add esp, 4
+  popad
+  jmp end_dup
   .start:
   mov dword ebx,[last]
   mov dword ebx, [ebx]
