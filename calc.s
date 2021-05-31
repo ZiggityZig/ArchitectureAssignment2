@@ -52,12 +52,23 @@ mov eax,0
 pop ecx
 %endmacro
 
+%macro printReg_debug 2
+  pushad
+  mov edx ,%1
+  push dword [stderr]
+  push %2
+  push edx
+  call fprintf
+  add esp,12
+  popad
+%endmacro
+
 section .data 
 newLine: db 10,0
 forO: db "%o",0
 for: db "%o",10,0
 msg: db "calc: ",0
-deb: db "here",10,0
+deb: db "Debug mode: ",10,0
 for3: db "%s",10,0
 for4: db "%p",10,0
 error1: db "Error: Operand Stack Overflow",10,0
@@ -73,7 +84,8 @@ section .bss
   operands: resd 1
   carryFlag: resb 1
   prev: resd 1
-
+  debugFlag: resb 1
+  argc: resd 1
 
 section .text
   align 16
@@ -94,21 +106,44 @@ main:
   push ebp
   mov ebp, esp
   mov edx,5
+  mov byte [debugFlag],0
   mov dword ecx, [ebp+12]
-  mov dword ecx, [ecx+4]
-  cmp ecx,0
+  mov dword ebx ,[ebp+8]
+  mov dword [argc], ebx
+  cmp dword [argc],1
   je startProgram
-  mov ebx,0
+  ;mov dword ecx, [ecx+4]
+  mov ebx,1
+  arguments:
+  cmp dword [argc],1
+  je startProgram
+  mov dword ecx, [ebp+12]
+  mov dword ecx, [ecx+4*ebx]
+  mov byte al,[ecx]
+  cmp byte al,'-'
+  je debug
+  cmp byte al,'7'
+  ja arguments
+  cmp byte al,'0'
+  jb arguments
+  mov eax,0
   mov edx,0
   calArg:
-    mov byte bl,[ecx]
-    sub byte bl,'0'
+    mov byte al,[ecx]
+    sub byte al,'0'
     shl edx,3
     add edx,ebx
     inc ecx
     cmp byte [ecx],0
     jne calArg
-    jmp startProgram
+    sub dword [argc],1
+    inc ebx
+    jmp arguments
+  debug:
+    mov byte [debugFlag],1
+    sub dword [argc],1
+    inc ebx
+    jmp arguments
   startProgram:
   mov dword [max],edx
   call myCalc
@@ -186,6 +221,15 @@ applyOperator:
    jne isEnd
    call duplicate
 
+ isDebug:
+  cmp dword [debugFlag],1
+  jne isEnd
+  cmp byte [ecx],'p'
+  je isEnd
+  cmp byte [ecx],'q'
+  je isEnd
+  call debug_print
+
  isEnd:
    cmp byte [ecx],'q'
    jne return
@@ -237,6 +281,20 @@ addNum:
   mov dword ecx,[last]
   mov dword [ecx],eax
   mov dword ecx,[ebp+8]
+  cmp dword [debugFlag],1
+  jne lastchar
+  pushad
+  push deb
+  push dword [stderr]
+  call fprintf
+  add esp,8
+  popad
+  pushad
+  push dword [stderr]
+  push ecx
+  call fprintf
+  add esp,12
+  popad
   lastchar:
     add dword [num],1
     inc ecx
@@ -693,3 +751,59 @@ duplicate:
   mov esp, ebp			
   pop ebp				
   ret
+
+debug_print:
+  push ebp              		
+  mov ebp, esp         		
+
+  .start:
+  pushad
+  push deb
+  push dword [stderr]
+  call fprintf
+  add esp,8
+  popad
+  call duplicate
+  call unpad
+  mov dword ecx,[last]
+  mov dword ecx,[ecx]
+  mov dword [num],0
+  .count:
+    add dword [num],1
+    mov dword ecx,[ecx+1]
+    cmp ecx,0
+    jne .count
+  push dword [num]      ; allocating space for the bytes for printing
+  call malloc
+  add esp,4
+  mov dword ecx,[last]
+  mov dword ecx,[ecx]
+  mov ebx,0
+  mov edx,0
+  .join:                 ; saving the bytes from the linked list on the allocated space
+    mov byte bl,[ecx]
+    mov byte [eax],bl
+   ; mov byte dl,[eax]
+    inc eax
+    mov dword ecx,[ecx+1]
+    cmp ecx,0
+    jne .join
+
+        ; now eax points to the end of the number
+  mov edx,0         ;print
+  .Print:            ; printing in reverse order
+    sub eax,1
+    mov byte dl,[eax]
+    printReg_debug edx,forO
+    sub dword [num],1
+    cmp dword [num],0
+    jne .Print
+    printNewLine 
+  push eax
+  call free
+  add esp,4
+  popStack
+  mov esp, ebp			
+  pop ebp				
+  ret
+
