@@ -655,3 +655,39 @@ duplicate:
   mov esp, ebp			
   pop ebp				
   ret
+
+  unpad:
+  push ebp              		
+  mov ebp, esp 
+  pushad
+  unpad_loop:
+    mov dword ebx, [last]
+    mov dword ebx, [ebx]
+    cmp dword [ebx + 1], 0
+    je finish_unpad
+    lastlink:
+      mov dword [prev], ebx
+      mov dword ebx, [ebx+1]
+      cmp ebx, 0
+      inc ecx
+      jne lastlink
+    mov edx, 0
+    mov byte dl, [ebx]
+    cmp edx, 0
+    jne finish_unpad
+    mov dword ecx, [prev]
+    mov dword ecx, [ecx + 1]
+    mov ecx, 0
+    pushRegs
+    push ebx
+    call free
+    add esp, 4
+    popRegs
+    jmp unpad_loop
+
+
+  finish_unpad:
+  popad                    	         		
+  mov esp, ebp			
+  pop ebp				
+  ret
