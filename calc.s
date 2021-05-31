@@ -91,27 +91,28 @@ section .text
   extern stdin
   extern stderr
 main:
+  push ebp
+  mov ebp, esp
   
-  ; pop    dword ecx    ; ecx = argc
-  ; mov    esi,esp      ; esi = argv
-  ; cmp ecx,1
-  ; je startProgram
-  ; inc esi
-  ; calArg:
-  ; cmp byte [esi],'7'
-  ; ja startProgram
-  ; cmp byte [esi],'0'
-  ; jb startProgram
-  ; mov edx,8
-  ; mov byte dl,[esi]
-  ; sub byte dl,'0'
-  ; shl edx,3
-  ; mov ebx,0
-
-
-  ; startProgram:
+  mov dword ecx, [ebp+12]
+  mov dword ecx, [ecx+4]
+  cmp ecx,0
+  je startProgram
+  mov ebx,0
+  mov edx,0
+  calArg:
+    mov byte bl,[ecx]
+    sub byte bl,'0'
+    shl edx,3
+    add edx,ebx
+    inc ecx
+    cmp byte [ecx],0
+    jne calArg
+  startProgram:
   call myCalc
-  
+  mov esp, ebp			
+  pop ebp				
+  ret
 
 myCalc:
   push ebp
@@ -192,9 +193,12 @@ applyOperator:
    call printf
    add esp, 8
    mov dword ecx,[operands]
+   cmp ecx,0
+   je Exit
    free_stack:
     popStack
     loop free_stack,ecx
+   Exit:
    mov eax,1
    mov ebx,0
    int 0x80
