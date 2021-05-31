@@ -675,11 +675,9 @@ duplicate:
       jmp lastlink
     endlastlink:
     mov edx, 0
-    mov dword ebx, ecx
     mov byte dl, [ebx]
     cmp edx, 0
     jne finish_unpad
-   ; mov dword ecx, [prev]
     mov dword [ecx+1], 0
     pushRegs
     push ebx
