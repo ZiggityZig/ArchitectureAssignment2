@@ -20,9 +20,12 @@
   push last
   call freeList
   add esp,4
+  cmp dword [operands],1
+  je %%sub_op
   sub dword [last],4
-  popad
+  %%sub_op:
   sub dword [operands], 1
+  popad
 %endmacro
 
 %macro pushRegs 0           ; for functions where we don't want to change the value of ecx,ebx,edx
@@ -188,6 +191,10 @@ applyOperator:
    push for
    call printf
    add esp, 8
+   mov dword ecx,[operands]
+   free_stack:
+    popStack
+    loop free_stack,ecx
    mov eax,1
    mov ebx,0
    int 0x80
@@ -368,7 +375,7 @@ addition:
       jg addition_loop
 
     cmp byte [carryFlag], 1
-    jne .end
+    jne added
     mov edx,1
     push edx
     push dword [prev]
@@ -376,8 +383,9 @@ addition:
     add esp,8
 
   ;; need to add code to test for overflow
-  end_add:
+  added:
     popStack
+  end_add:
     popad                    	         		
     mov esp, ebp			
     pop ebp				
@@ -447,7 +455,16 @@ finish:
 
 num_of_bytes:
   push ebp                ;; Calculate number of bytes, save to eax and pop the number from stack
-  mov ebp, esp         		  
+  mov ebp, esp 
+  cmp dword [operands], 0
+  jne .start
+  pushad
+  push error2
+  call printf
+  add esp, 4
+  popad
+  jmp end_num_of_bytes 
+  .start:       		  
   countDigits
   mov edx,1
   and edx,eax
@@ -484,6 +501,8 @@ num_of_bytes:
     cmp dword [num],0
     jne .loop1
   .endloop1:
+  add dword [operands], 1
+  end_num_of_bytes:
   mov esp, ebp			
   pop ebp				
   ret 
@@ -491,7 +510,16 @@ num_of_bytes:
 bitwise_and:
   push ebp              		
   mov ebp, esp    
-  pushad     		
+  pushad
+  cmp dword [operands], 2
+  jae .start
+  pushad
+  push error2
+  call printf
+  add esp, 4
+  popad
+  jmp end_and  
+  .start:    		
   call pad
   mov edx, eax
   mov dword ebx,[last]    
@@ -512,6 +540,7 @@ bitwise_and:
     cmp ecx,0
     jne andLoop
   popStack 
+  end_and:
   popad                   	         		
   mov esp, ebp			
   pop ebp				
@@ -553,6 +582,15 @@ duplicate:
   push ebp              		
   mov ebp, esp 
   pushad
+  cmp dword [operands], 0
+  jne .start
+  pushad
+  push error2
+  call printf
+  add esp, 4
+  popad
+  jmp end_dup 
+  .start:
   mov dword ebx,[last]
   mov dword ebx, [ebx]
   pushRegs
@@ -586,6 +624,7 @@ duplicate:
     jne duplication_loop
      finish_dup:
   add dword [operands],1
+  end_dup:
   popad                    	         		
   mov esp, ebp			
   pop ebp				
