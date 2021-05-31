@@ -326,7 +326,16 @@ pop_and_print:
 addition: 
   push ebp              		
   mov ebp, esp         		
-  pushad   
+  pushad
+  cmp dword [operands],2
+  jae .start
+  pushad
+  push error2
+  call printf
+  add esp, 4
+  popad
+  jmp end_add
+  .start:
   mov dword ebx,[last]      ;; put the adress of the next two operands in to the registers
   sub dword [last],4
   mov dword ecx,[last]
@@ -367,7 +376,7 @@ addition:
     add esp,8
 
   ;; need to add code to test for overflow
-  .end:
+  end_add:
     popStack
     popad                    	         		
     mov esp, ebp			
