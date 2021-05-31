@@ -55,9 +55,9 @@ pop ecx
 %macro printReg_debug 2
   pushad
   mov edx ,%1
-  push dword [stderr]
-  push %2
   push edx
+  push %2
+  push dword [stderr]
   call fprintf
   add esp,12
   popad
@@ -68,9 +68,7 @@ newLine: db 10,0
 forO: db "%o",0
 for: db "%o",10,0
 msg: db "calc: ",0
-deb: db "Debug mode: ",10,0
-for3: db "%s",10,0
-for4: db "%p",10,0
+deb: db "Debug mode: ",0
 error1: db "Error: Operand Stack Overflow",10,0
 error2: db "Error: Insufficient Number of Arguments on Stack",10,0
 
@@ -154,7 +152,6 @@ main:
 myCalc:
   push ebp
   mov ebp, esp
-  ;pushad
   mov dword [operands],0
   mov dword [last],stack
   start:
@@ -180,7 +177,6 @@ myCalc:
   call applyOperator
   add esp,4
   jmp start
-  ;popad                    	         		
   mov esp, ebp			
   pop ebp				
   ret
@@ -201,11 +197,6 @@ applyOperator:
    jne isAnd
    call addition
 
-;  ;isMult:
-;   ; cmp byte [ecx],'*'
-;   ; jne isAnd
-;   ; call multiplication
-
  isAnd:
    cmp byte [ecx],'&'
    jne isNum
@@ -218,12 +209,12 @@ applyOperator:
 
  isDup:
    cmp byte [ecx],'d'
-   jne isEnd
+   jne isDebug
    call duplicate
 
  isDebug:
-  cmp dword [debugFlag],1
-  jne isEnd
+  cmp byte [debugFlag],0
+  je isEnd
   cmp byte [ecx],'p'
   je isEnd
   cmp byte [ecx],'q'
@@ -281,8 +272,8 @@ addNum:
   mov dword ecx,[last]
   mov dword [ecx],eax
   mov dword ecx,[ebp+8]
-  cmp dword [debugFlag],1
-  jne lastchar
+  cmp byte [debugFlag],0
+  je lastchar
   pushad
   push deb
   push dword [stderr]
@@ -290,10 +281,10 @@ addNum:
   add esp,8
   popad
   pushad
-  push dword [stderr]
   push ecx
+  push dword [stderr]
   call fprintf
-  add esp,12
+  add esp,8
   popad
   lastchar:
     add dword [num],1
@@ -334,11 +325,9 @@ create_link:
   push ebp              		
   mov ebp, esp         		
   pushRegs   
- ; push ecx             			
 	push dword 5
   call malloc
   add esp,4
- ; pop ecx
   mov dword ebx,[ebp+8]
   mov dword edx,[ebp+12]
   mov byte [eax],dl
@@ -351,7 +340,8 @@ create_link:
 
 pop_and_print:
   push ebp              		
-  mov ebp, esp         		
+  mov ebp, esp   
+  pushRegs      		
   cmp dword [operands], 0
   jne .start
   pushad
@@ -380,7 +370,6 @@ pop_and_print:
   join:                 ; saving the bytes from the linked list on the allocated space
     mov byte bl,[ecx]
     mov byte [eax],bl
-   ; mov byte dl,[eax]
     inc eax
     mov dword ecx,[ecx+1]
     cmp ecx,0
@@ -401,6 +390,7 @@ pop_and_print:
   add esp,4
   popStack
   end_print:
+  popRegs
   mov esp, ebp			
   pop ebp				
   ret
@@ -457,8 +447,6 @@ addition:
     push dword [prev]
     call create_link
     add esp,8
-
-  ;; need to add code to test for overflow
   added:
     popStack
   end_add:
@@ -512,12 +500,10 @@ secondGreater:
     jg .loop1  
   mov dword ebx,[prev]
   .loop2:
-  ;push edx
     push 0
     push ebx
     call create_link
     add esp,8
-    ;pop edx
     mov ebx, eax 
     dec edx
     cmp edx, 0
@@ -540,12 +526,40 @@ num_of_bytes:
   add esp, 4
   popad
   jmp end_num_of_bytes 
-  .start:       		  
-  countDigits
-  mov edx,1
-  and edx,eax
-  shr eax,1
+  .start:  
+  call unpad     		  
+  countDigits 
+  pushRegs 
+  dec eax
+  mov edx,eax
+  shl eax,1
   add eax,edx
+  inc eax
+  mov dword ecx,[last]
+  mov dword ecx, [ecx]
+  .loop1:
+    mov dword [prev],ecx
+    mov dword ecx, [ecx+1]
+    cmp ecx, 0
+    jg .loop1 
+  mov dword ecx,[prev] 
+  mov edx, 0
+  mov byte dl,[ecx] 
+  cmp edx, 2
+  jb end_byte_calc
+  inc eax
+  cmp edx, 4
+  jb end_byte_calc
+  inc eax
+  end_byte_calc:
+  mov dl, 7
+  and edx, eax
+  shr eax, 3
+  cmp edx,0
+  je pushToStack
+  inc eax
+  pushToStack:
+  popRegs
   mov dword [num],eax 
   popStack
   add dword [last],4
@@ -616,7 +630,6 @@ bitwise_and:
     cmp ecx,0
     jne andLoop
   popStack 
-  ;call unpad
   end_and:
   popad                   	         		
   mov esp, ebp			
@@ -692,9 +705,6 @@ duplicate:
   mov byte dl, [ebx]
   mov byte [eax], dl
   mov dword [eax+1],0
- ; mov dword [last], ecx
- ;mov dword ecx, [ecx]
-  ;mov dword ecx, [ecx+1]
   mov dword ebx, [ebx+1]
   cmp ebx, 0
   je finish_dup  
@@ -704,8 +714,6 @@ duplicate:
     push eax
     call create_link
     add esp, 8
-    ; mov ecx, eax
-    ; mov dword ecx, [ecx+1]
     mov dword ebx, [ebx+1]
     cmp ebx, 0
     jne duplication_loop
@@ -724,7 +732,7 @@ duplicate:
   unpad_loop:
     mov dword ebx, [last]
     mov dword ebx, [ebx]
-    cmp dword [ebx + 1], 0
+    cmp dword [ebx+1], 0
     je finish_unpad
     lastlink:
       cmp dword [ebx+1], 0
@@ -763,7 +771,6 @@ debug_print:
   call fprintf
   add esp,8
   popad
-  call duplicate
   call unpad
   mov dword ecx,[last]
   mov dword ecx,[ecx]
@@ -783,7 +790,6 @@ debug_print:
   .join:                 ; saving the bytes from the linked list on the allocated space
     mov byte bl,[ecx]
     mov byte [eax],bl
-   ; mov byte dl,[eax]
     inc eax
     mov dword ecx,[ecx+1]
     cmp ecx,0
@@ -802,7 +808,6 @@ debug_print:
   push eax
   call free
   add esp,4
-  popStack
   mov esp, ebp			
   pop ebp				
   ret
