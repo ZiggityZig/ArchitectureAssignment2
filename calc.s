@@ -108,6 +108,7 @@ main:
     inc ecx
     cmp byte [ecx],0
     jne calArg
+    jmp startProgram
   startProgram:
   mov dword [max],edx
   call myCalc
