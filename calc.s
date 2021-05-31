@@ -302,6 +302,7 @@ pop_and_print:
   popad
   jmp end_print
   .start:
+  call unpad
   mov dword ecx,[last]
   mov dword ecx,[ecx]
   mov dword [num],0
@@ -556,6 +557,7 @@ bitwise_and:
     cmp ecx,0
     jne andLoop
   popStack 
+  ;call unpad
   end_and:
   popad                   	         		
   mov esp, ebp			
@@ -666,18 +668,19 @@ duplicate:
     cmp dword [ebx + 1], 0
     je finish_unpad
     lastlink:
-      mov dword [prev], ebx
+      cmp dword [ebx+1], 0
+      je endlastlink
+      mov dword ecx, ebx
       mov dword ebx, [ebx+1]
-      cmp ebx, 0
-      inc ecx
-      jne lastlink
+      jmp lastlink
+    endlastlink:
     mov edx, 0
+    mov dword ebx, ecx
     mov byte dl, [ebx]
     cmp edx, 0
     jne finish_unpad
-    mov dword ecx, [prev]
-    mov dword ecx, [ecx + 1]
-    mov ecx, 0
+   ; mov dword ecx, [prev]
+    mov dword [ecx+1], 0
     pushRegs
     push ebx
     call free
